@@ -1,0 +1,51 @@
+﻿<#@ template language="C#" #>
+<#@ output extension=".cs" #>
+<#@ import namespace="System" #>
+#pragma warning disable
+
+using System;
+using System.Buffers.Binary;
+
+namespace MinecraftServer.IO;
+
+public static partial class StreamUtil
+{
+<# 
+	var types = new object[][]
+	{
+		new object[] { "short",   "Int16",  2 },
+		new object[] { "int",     "Int32",  4 },
+		new object[] { "long",    "Int64",  8 },
+		new object[] { "ushort",  "UInt16", 2 },
+		new object[] { "uint",    "UInt32", 4 },
+		new object[] { "ulong",   "UInt64", 8 }
+	};
+
+  foreach(var type in types) { #>
+	public static <#= type[0] #> Read<#= type[1] #>(this Stream stream)
+	{
+		var buffer = new byte[<#= type[2] #>];
+		int count = stream.Read(buffer);
+
+		if(count != <#= type[2] #>)
+			throw new IOException("Unable to read an '<#= type[1] #>' from stream.");
+
+		return BinaryPrimitives.<#= (type.Length > 3 ? type[4] : $"Read{type[1]}BigEndian") #>(buffer);
+	}
+
+	public static Stream Read<#= type[1] #>(this Stream stream, out <#= type[0] #> result)
+	{
+		result = stream.Read<#= type[1] #>();
+		return stream;
+	}
+
+	public static Stream Write<#= type[1] #>(this Stream stream, <#= type[0] #> value)
+	{
+		var buffer = new byte[<#= type[2] #>];
+		BinaryPrimitives.<#= (type.Length > 3 ? type[4] : $"Write{type[1]}BigEndian") #>(buffer, value);
+		stream.Write(buffer);
+		return stream;
+	}
+
+  <# } #>
+}
