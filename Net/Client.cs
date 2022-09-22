@@ -43,7 +43,7 @@ public class Client : IDisposable
         }
 
         if (temp.Count == 0)
-            Log.Error("Unable to find any suitable client state factory class implementation.");
+            Log.Error("Cannot find an client state implementations, server will not work correctly!");
 
         ClientStateFactory = temp;
     }
@@ -56,7 +56,8 @@ public class Client : IDisposable
     private PacketQueue queue;
 
     public IPAddress RemoteAddress { get; }
-    public ClientStateType StateType
+
+    public ClientStateType CurrentState
     {
         get => State switch
         {
@@ -64,6 +65,7 @@ public class Client : IDisposable
             _ => ClientStateType.Disconnected
         };
     }
+
     internal IClientState State { get; set; }
     internal int CurrentProtocol { get; set; }
 
@@ -89,7 +91,7 @@ public class Client : IDisposable
         remove => onDisconnected += value;
     }
 
-    public async Task ChangeStateAsync(ClientStateType type)
+    internal async Task ChangeStateAsync(ClientStateType type)
     {
         var oldState = State;
 
@@ -112,7 +114,7 @@ public class Client : IDisposable
 
             State = func(this);
 
-            Log.Debug("Client '" + RemoteAddress + "' change  state to '" + type + "'");
+            Log.Debug("Client '" + RemoteAddress + "' change state to '" + type + "'");
         }
     }
 
@@ -173,7 +175,7 @@ public class Client : IDisposable
                 {
                     if (len == 0xFA || len == 0xFE)
                     {
-                        if (StateType == ClientStateType.Handshake)
+                        if (CurrentState == ClientStateType.Handshake)
                         {
                             Log.Warn($"Client '{RemoteAddress}' sent legacy list ping. Dropping connection...");
                             break;
