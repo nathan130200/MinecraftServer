@@ -5,26 +5,26 @@ namespace Minecraft.IO;
 
 public class DataStream : IDisposable
 {
-    protected Stream baseStream;
-    protected readonly bool leaveStreamOpen;
-    protected readonly object syncLock = new();
-    volatile bool disposed;
+    protected Stream m_BaseStream;
+    protected readonly bool m_LeaveOpen;
+    protected readonly object m_SyncLock = new();
+    volatile bool m_Disposed;
 
     public DataStream(Stream stream, bool leaveOpen = true)
     {
-        baseStream = stream;
-        leaveStreamOpen = leaveOpen;
+        m_BaseStream = stream;
+        m_LeaveOpen = leaveOpen;
     }
 
     public DataStream(byte[] buffer) : this()
     {
-        baseStream.Write(buffer, 0, buffer.Length);
-        baseStream.Position = 0;
+        m_BaseStream.Write(buffer, 0, buffer.Length);
+        m_BaseStream.Position = 0;
     }
 
     public DataStream()
     {
-        baseStream = new MemoryStream();
+        m_BaseStream = new MemoryStream();
     }
 
     ~DataStream()
@@ -36,50 +36,50 @@ public class DataStream : IDisposable
     {
         ThrowIfDisposed();
 
-        lock (syncLock)
+        lock (m_SyncLock)
         {
-            if (baseStream is not MemoryStream)
+            if (m_BaseStream is not MemoryStream)
                 throw new InvalidOperationException("Stream is not subclass of '" + typeof(MemoryStream).FullName + "'...");
 
-            var pos = baseStream.Position;
-            baseStream.Position = 0;
+            var pos = m_BaseStream.Position;
+            m_BaseStream.Position = 0;
 
-            var buffer = new byte[baseStream.Length];
-            baseStream.Read(buffer, 0, buffer.Length);
-            baseStream.Position = pos;
+            var buffer = new byte[m_BaseStream.Length];
+            m_BaseStream.Read(buffer, 0, buffer.Length);
+            m_BaseStream.Position = pos;
 
             return buffer;
         }
     }
 
     public void CopyTo(DataStream dest, uint bufferSize = 4096)
-        => CopyTo(dest.baseStream, bufferSize);
+        => CopyTo(dest.m_BaseStream, bufferSize);
 
     public void CopyTo(Stream dest, uint bufferSize = 4096)
     {
         ThrowIfDisposed();
 
-        lock (syncLock)
+        lock (m_SyncLock)
         {
             var buff = new byte[bufferSize];
             int len;
 
             long pos = 0;
 
-            if (baseStream.CanSeek)
+            if (m_BaseStream.CanSeek)
             {
-                pos = baseStream.Position;
-                baseStream.Position = 0;
+                pos = m_BaseStream.Position;
+                m_BaseStream.Position = 0;
             }
 
-            while ((len = baseStream.Read(buff, 0, buff.Length)) > 0)
+            while ((len = m_BaseStream.Read(buff, 0, buff.Length)) > 0)
             {
                 dest.Write(buff, 0, len);
                 ThrowIfDisposed();
             }
 
-            if (baseStream.CanSeek)
-                baseStream.Position = pos;
+            if (m_BaseStream.CanSeek)
+                m_BaseStream.Position = pos;
 
             dest.Flush();
         }
@@ -87,7 +87,7 @@ public class DataStream : IDisposable
 
     protected void ThrowIfDisposed()
     {
-        if (disposed)
+        if (m_Disposed)
             throw new ObjectDisposedException(GetType().FullName);
     }
 
@@ -95,16 +95,16 @@ public class DataStream : IDisposable
     {
         ThrowIfDisposed();
 
-        disposed = true;
+        m_Disposed = true;
 
-        lock (syncLock)
+        lock (m_SyncLock)
         {
-            if (baseStream != null)
+            if (m_BaseStream != null)
             {
-                if (!leaveStreamOpen)
-                    baseStream.Dispose();
+                if (!m_LeaveOpen)
+                    m_BaseStream.Dispose();
 
-                baseStream = null;
+                m_BaseStream = null;
             }
         }
 

@@ -16,10 +16,10 @@ public class DataInputStream : DataStream
     {
     }
 
-    public short ReadInt16() => Primitive.Read<short>(baseStream);
-    public int ReadInt32() => Primitive.Read<int>(baseStream);
-    public long ReadInt64() => Primitive.Read<long>(baseStream);
-    public ushort ReadUInt16() => Primitive.Read<ushort>(baseStream);
-    public uint ReadUInt32() => Primitive.Read<uint>(baseStream);
-    public ulong ReadUInt64() => Primitive.Read<ulong>(baseStream);
+    public short ReadInt16() => Primitive.Read<short>(m_BaseStream);
+    public int ReadInt32() => Primitive.Read<int>(m_BaseStream);
+    public long ReadInt64() => Primitive.Read<long>(m_BaseStream);
+    public ushort ReadUInt16() => Primitive.Read<ushort>(m_BaseStream);
+    public uint ReadUInt32() => Primitive.Read<uint>(m_BaseStream);
+    public ulong ReadUInt64() => Primitive.Read<ulong>(m_BaseStream);
 }

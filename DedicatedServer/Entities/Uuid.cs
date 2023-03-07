@@ -154,7 +154,7 @@ public readonly struct Uuid : IEquatable<Uuid>,
             var components = str.Split('-', StringSplitOptions.RemoveEmptyEntries);
 
             if (components.Length != 5)
-                goto FAIL;
+                goto _error;
 
             long mostSigBits = Convert.ToInt64(components[0], 16);
             mostSigBits <<= 16;
@@ -169,15 +169,15 @@ public readonly struct Uuid : IEquatable<Uuid>,
             return new Uuid(mostSigBits, leastSigBits);
         }
 
-        var buffer = Convert.FromHexString(str);
+        var buf = Convert.FromHexString(str);
 
-        if (buffer.Length != 16)
-            goto FAIL;
+        if (buf.Length != 16)
+            goto _error;
 
-        return new Uuid(buffer);
+        return new Uuid(buf);
 
-    FAIL:
-        throw new ArgumentException("UUID not well formed.");
+    _error:
+        throw new ArgumentException("Given UUID string is not well formed.");
     }
 
     public static bool TryParse(string str, out Uuid uuid)
