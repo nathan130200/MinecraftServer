@@ -2,7 +2,7 @@
 
 public struct Rotation
 {
-    public byte Value
+    internal byte Value
     {
         get;
         set;
