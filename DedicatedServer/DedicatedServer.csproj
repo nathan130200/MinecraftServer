@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+		<TargetFramework>net7.0</TargetFramework>
+		<RootNamespace>Minecraft</RootNamespace>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
+		<PackageReference Include="Serilog" Version="2.12.1-dev-01635" />
+		<PackageReference Include="Serilog.Sinks.Console" Version="4.1.1-dev-00901" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Using Include="Serilog" />
+	</ItemGroup>
+
+</Project>
