@@ -6,7 +6,7 @@ using System.IO;
 
 namespace Minecraft.IO;
 
-public static class Primitive
+public static class DataTypes
 {
     delegate object DecoderFunction(ReadOnlySpan<byte> span);
     delegate T DecoderFunction<T>(ReadOnlySpan<byte> span);
@@ -14,7 +14,7 @@ public static class Primitive
     delegate void EncoderFunction(Span<byte> span, object value);
     delegate void EncoderFunction<T>(Span<byte> span, T value);
 
-    static readonly Dictionary<Type, int> s_PrimitiveSizes = new()
+    static readonly Dictionary<Type, int> _sizeOf = new()
     {
         [typeof(short)] = 2,
         [typeof(int)] = 4,
@@ -26,7 +26,7 @@ public static class Primitive
         [typeof(double)] = 8,
     };
 
-    static readonly Dictionary<Type, DecoderFunction> s_Decoders = new()
+    static readonly Dictionary<Type, DecoderFunction> _decoders = new()
     {
         [typeof(short)] = GetDecoderFunction(BinaryPrimitives.ReadInt16BigEndian),
         [typeof(int)] = GetDecoderFunction(BinaryPrimitives.ReadInt32BigEndian),
@@ -38,7 +38,7 @@ public static class Primitive
         [typeof(double)] = GetDecoderFunction(BinaryPrimitives.ReadDoubleBigEndian),
     };
 
-    static readonly Dictionary<Type, EncoderFunction> s_Encoders = new()
+    static readonly Dictionary<Type, EncoderFunction> _encoders = new()
     {
         [typeof(short)] = GetEncoderFunction<short>(BinaryPrimitives.WriteInt16BigEndian),
         [typeof(int)] = GetEncoderFunction<int>(BinaryPrimitives.WriteInt32BigEndian),
@@ -51,13 +51,13 @@ public static class Primitive
     };
 
     static DecoderFunction GetDecoderFunction<T>(DecoderFunction<T> func)
-        => new(xs => func(xs));
+        => new(span => func(span));
 
     static EncoderFunction GetEncoderFunction<T>(EncoderFunction<T> func)
         => new((span, value) => func(span, (T)value));
 
     public static int GetLength(Type type)
-        => s_PrimitiveSizes[type];
+        => _sizeOf[type];
 
     public static int GetLength<T>()
         => GetLength(typeof(T));
@@ -67,19 +67,29 @@ public static class Primitive
         var len = GetLength(type);
         Span<byte> buf = stackalloc byte[len];
         Debug.Assert(source.Read(buf) == len);
-        return s_Decoders[type](buf);
+        return _decoders[type](buf);
     }
 
     public static T Read<T>(Stream source)
         => (T)Read(typeof(T), source);
 
+    public static byte[] Write(Type type, object value)
+    {
+        var buf = new byte[GetLength(type)];
+        _encoders[type](buf, value);
+        return buf;
+    }
+
     public static void Write(Type type, Stream destination, object value)
     {
         var len = GetLength(type);
         Span<byte> buf = stackalloc byte[len];
-        s_Encoders[type](buf, value);
+        _encoders[type](buf, value);
         destination.Write(buf);
     }
+
+    public static byte[] Write<T>(T value)
+        => Write(typeof(T), value);
 
     public static void Write<T>(Stream destination, T value)
         => Write(typeof(T), destination, value);

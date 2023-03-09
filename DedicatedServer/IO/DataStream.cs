@@ -1,30 +1,51 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
 
 namespace Minecraft.IO;
 
+[DebuggerDisplay("Offset = {Position}; Count = {Length}")]
 public class DataStream : IDisposable
 {
-    protected Stream m_BaseStream;
-    protected readonly bool m_LeaveOpen;
-    protected readonly object m_SyncLock = new();
-    volatile bool m_Disposed;
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+    protected Stream _baseStream;
+
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+    protected readonly bool _leaveOpen;
+
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+    protected readonly object _syncLock = new();
+
+    [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+    protected volatile bool _disposed;
+
+    public long Length
+    {
+        get => _baseStream?.Length ?? 0;
+        set => _baseStream.SetLength(value);
+    }
+
+    public long Position
+    {
+        get => _baseStream?.Position ?? 0;
+        set => _baseStream.Position = value;
+    }
 
     public DataStream(Stream stream, bool leaveOpen = true)
     {
-        m_BaseStream = stream;
-        m_LeaveOpen = leaveOpen;
+        _baseStream = stream;
+        _leaveOpen = leaveOpen;
     }
 
     public DataStream(byte[] buffer) : this()
     {
-        m_BaseStream.Write(buffer, 0, buffer.Length);
-        m_BaseStream.Position = 0;
+        _baseStream.Write(buffer, 0, buffer.Length);
+        _baseStream.Position = 0;
     }
 
     public DataStream()
     {
-        m_BaseStream = new MemoryStream();
+        _baseStream = new MemoryStream();
     }
 
     ~DataStream()
@@ -36,50 +57,50 @@ public class DataStream : IDisposable
     {
         ThrowIfDisposed();
 
-        lock (m_SyncLock)
+        lock (_syncLock)
         {
-            if (m_BaseStream is not MemoryStream)
+            if (_baseStream is not MemoryStream)
                 throw new InvalidOperationException("Stream is not subclass of '" + typeof(MemoryStream).FullName + "'...");
 
-            var pos = m_BaseStream.Position;
-            m_BaseStream.Position = 0;
+            var pos = _baseStream.Position;
+            _baseStream.Position = 0;
 
-            var buffer = new byte[m_BaseStream.Length];
-            m_BaseStream.Read(buffer, 0, buffer.Length);
-            m_BaseStream.Position = pos;
+            var buffer = new byte[_baseStream.Length];
+            _baseStream.Read(buffer, 0, buffer.Length);
+            _baseStream.Position = pos;
 
             return buffer;
         }
     }
 
     public void CopyTo(DataStream dest, uint bufferSize = 4096)
-        => CopyTo(dest.m_BaseStream, bufferSize);
+        => CopyTo(dest._baseStream, bufferSize);
 
     public void CopyTo(Stream dest, uint bufferSize = 4096)
     {
         ThrowIfDisposed();
 
-        lock (m_SyncLock)
+        lock (_syncLock)
         {
             var buff = new byte[bufferSize];
             int len;
 
             long pos = 0;
 
-            if (m_BaseStream.CanSeek)
+            if (_baseStream.CanSeek)
             {
-                pos = m_BaseStream.Position;
-                m_BaseStream.Position = 0;
+                pos = _baseStream.Position;
+                _baseStream.Position = 0;
             }
 
-            while ((len = m_BaseStream.Read(buff, 0, buff.Length)) > 0)
+            while ((len = _baseStream.Read(buff, 0, buff.Length)) > 0)
             {
                 dest.Write(buff, 0, len);
                 ThrowIfDisposed();
             }
 
-            if (m_BaseStream.CanSeek)
-                m_BaseStream.Position = pos;
+            if (_baseStream.CanSeek)
+                _baseStream.Position = pos;
 
             dest.Flush();
         }
@@ -87,24 +108,25 @@ public class DataStream : IDisposable
 
     protected void ThrowIfDisposed()
     {
-        if (m_Disposed)
+        if (_disposed)
             throw new ObjectDisposedException(GetType().FullName);
     }
 
     public void Dispose()
     {
-        ThrowIfDisposed();
+        if (_disposed)
+            return;
 
-        m_Disposed = true;
+        _disposed = true;
 
-        lock (m_SyncLock)
+        lock (_syncLock)
         {
-            if (m_BaseStream != null)
+            if (_baseStream != null)
             {
-                if (!m_LeaveOpen)
-                    m_BaseStream.Dispose();
+                if (!_leaveOpen)
+                    _baseStream.Dispose();
 
-                m_BaseStream = null;
+                _baseStream = null;
             }
         }
 

@@ -18,7 +18,7 @@ public readonly struct Uuid : IEquatable<Uuid>,
     public static Uuid Empty => new(0, 0);
 
     [DebuggerBrowsable(DebuggerBrowsableState.Never), JsonIgnore]
-    private readonly byte[] m_Buffer;
+    private readonly byte[] _buffer;
 
     /// <summary>
     /// Returns the most significant 64 bits of this UUID's 128 bit value.
@@ -28,7 +28,7 @@ public readonly struct Uuid : IEquatable<Uuid>,
     {
         get
         {
-            return BinaryPrimitives.ReadInt64BigEndian(m_Buffer.AsSpan(0..8));
+            return BinaryPrimitives.ReadInt64BigEndian(_buffer.AsSpan(0..8));
         }
     }
 
@@ -40,7 +40,7 @@ public readonly struct Uuid : IEquatable<Uuid>,
     {
         get
         {
-            return BinaryPrimitives.ReadInt64BigEndian(m_Buffer.AsSpan(8..16));
+            return BinaryPrimitives.ReadInt64BigEndian(_buffer.AsSpan(8..16));
         }
     }
 
@@ -49,7 +49,7 @@ public readonly struct Uuid : IEquatable<Uuid>,
     /// </summary>
     [JsonIgnore]
     public int Version
-        => m_Buffer[6] >> 4 & 0x0f;
+        => _buffer[6] >> 4 & 0x0f;
 
     /// <summary>
     /// The UUID variant version.
@@ -59,7 +59,7 @@ public readonly struct Uuid : IEquatable<Uuid>,
     {
         get
         {
-            var variantBits = m_Buffer[8] >> 5 & 0x07;
+            var variantBits = _buffer[8] >> 5 & 0x07;
             if ((variantBits & 0x04) == 0) return 0;
             else if ((variantBits & 0x02) == 0) return 1;
             else if ((variantBits & 0x01) == 0) return 2;
@@ -71,7 +71,7 @@ public readonly struct Uuid : IEquatable<Uuid>,
     /// Private constructor which uses a byte array to construct the new UUID.
     /// </summary>
     internal Uuid(byte[] data)
-        => m_Buffer = data;
+        => _buffer = data;
 
     /// <summary>
     /// Constructs a new <see cref="Uuid"/> using the specified data.
@@ -80,9 +80,9 @@ public readonly struct Uuid : IEquatable<Uuid>,
     /// <param name="lsb">The least significant bits</param>
     public Uuid(long msb, long lsb)
     {
-        m_Buffer = new byte[16];
-        BinaryPrimitives.WriteInt64BigEndian(m_Buffer.AsSpan(0..8), msb);
-        BinaryPrimitives.WriteInt64BigEndian(m_Buffer.AsSpan(8..16), lsb);
+        _buffer = new byte[16];
+        BinaryPrimitives.WriteInt64BigEndian(_buffer.AsSpan(0..8), msb);
+        BinaryPrimitives.WriteInt64BigEndian(_buffer.AsSpan(8..16), lsb);
     }
 
     public override string ToString()
@@ -90,7 +90,7 @@ public readonly struct Uuid : IEquatable<Uuid>,
 
     public string ToString(bool includeDashes)
     {
-        var str = Convert.ToHexString(m_Buffer);
+        var str = Convert.ToHexString(_buffer);
 
         if (!includeDashes)
             return str;
@@ -104,13 +104,13 @@ public readonly struct Uuid : IEquatable<Uuid>,
     }
 
     public override int GetHashCode()
-        => m_Buffer.GetHashCode();
+        => _buffer.GetHashCode();
 
     public override bool Equals(object obj)
         => obj is Uuid other && Equals(other);
 
     public bool Equals(Uuid other)
-        => m_Buffer.SequenceEqual(other.m_Buffer);
+        => _buffer.SequenceEqual(other._buffer);
 
     public static bool operator ==(Uuid left, Uuid right)
         => left.Equals(right);

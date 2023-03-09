@@ -24,6 +24,9 @@ public struct BlockPosition : IEquatable<BlockPosition>
         set;
     }
 
+    public void Deconstruct(out int x, out int y, out int z)
+        => (x, y, z) = (X, Y, Z);
+
     public BlockPosition() => X = Y = Z = 0;
     public BlockPosition(int value) => X = Y = Z = value;
     public BlockPosition(int x, int y, int z) => (X, Y, Z) = (x, y, z);
